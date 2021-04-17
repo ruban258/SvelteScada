@@ -1,2 +1,2 @@
 # SvelteScada
-Svelte + Appolo + HotChocolate + OPC UA + GraphQl + asp.net core 5
+Svelte + Appolo + HotChocolate + OPC UA + GraphQl + ASP.net core 5

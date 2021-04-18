@@ -1,30 +1,54 @@
 <script>
-	export let name;
+	import client from './graphql-client.js';
+    import gql from 'graphql-tag';
+
+    let tag ={ TagName:"", Value:""};
+   
+    const READ_ALL_TAGS = gql`query{
+    tags{
+    tagName
+    value
+    }
+    }`;
+
+    const READ_TAG = gql`subscription{
+    onTagUpdated{
+    tagName
+    value
+  }
+}`;
+
+const getAllCountries = () => {
+    client
+      .query({
+        query: READ_ALL_TAGS
+      })
+      .then((res) => {
+        tags = res.data;
+        console.log(tags);
+      })
+      .catch((err) => console.log(err));
+  };
+
+  let tags = client.subscribe({
+        query: READ_TAG
+      });
 </script>
 
 <main>
-	<h1>Hello {name}!</h1>
-	<p>Visit the <a href="https://svelte.dev/tutorial">Svelte tutorial</a> to learn how to build Svelte apps.</p>
+	<table>
+        <tbody>
+            {#each $tags.data.onTagUpdated as t}
+                <tr>
+                    <td>{t.TagName}</td>
+                    <td>{t.Value}</td>
+                </tr>
+            {/each}
+        </tbody>
+
+    </table>
 </main>
 
 <style>
-	main {
-		text-align: center;
-		padding: 1em;
-		max-width: 240px;
-		margin: 0 auto;
-	}
-
-	h1 {
-		color: #ff3e00;
-		text-transform: uppercase;
-		font-size: 4em;
-		font-weight: 100;
-	}
-
-	@media (min-width: 640px) {
-		main {
-			max-width: none;
-		}
-	}
+	
 </style>

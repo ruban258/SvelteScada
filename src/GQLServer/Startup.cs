@@ -1,7 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using GQLServer.GQL;
+using GQLServer.infra;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -16,6 +14,13 @@ namespace GQLServer
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddGraphQLServer()
+                    .AddQueryType<Query>()
+                    .AddSubscriptionType<GQLSubscription>()
+                    .AddInMemorySubscriptions();
+            services.AddSingleton<IOutput, ConsoleOutput>();
+            services.AddSingleton<XMLParser>();
+            services.AddSingleton<UAClient>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -27,14 +32,13 @@ namespace GQLServer
             }
 
             app.UseRouting();
+            app.UseWebSockets();
 
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapGet("/", async context =>
-                {
-                    await context.Response.WriteAsync("Hello World!");
-                });
+                endpoints.MapGraphQL();
             });
+            app.UseGraphQLVoyager();
         }
     }
 }

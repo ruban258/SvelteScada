@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<XmlConfig xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">	
+	<OPCUAServer Serverbezeichnung="Siemens PLC" URL="opc.tcp://192.168.0.105:4840">
+		<UserName>""</UserName>
+		<Password>""</Password>
+		<Subscriptions>
+			<Subscription PublishingInterval="1000">
+				<OPCVariables>
+					<OPCVariable Name="Scalar_Static_Float" NodeID="" DBName="DataBlock" VariableName="Scalar_Static_Float" SamplingInterval="1000" />
+					<OPCVariable Name="Scalar_Static_Int32" NodeID="" DBName="DataBlock" VariableName="Scalar_Static_Int32" SamplingInterval="1000" />
+					<OPCVariable Name="Scalar_Static_String" NodeID="" DBName="DataBlock" VariableName="Scalar_Static_String" SamplingInterval="1000" />
+				</OPCVariables>
+			</Subscription>
+		</Subscriptions>
+	</OPCUAServer>	
+</XmlConfig>

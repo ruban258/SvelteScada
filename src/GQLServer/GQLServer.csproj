@@ -10,4 +10,10 @@
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua" Version="1.4.365.48" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="XmlConfig.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

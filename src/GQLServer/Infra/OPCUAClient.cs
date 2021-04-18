@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
@@ -10,16 +11,18 @@ using GQLServer.Models;
 using HotChocolate.Subscriptions;
 using Opc.Ua;
 using Opc.Ua.Client;
+using System.Linq;
 
 namespace GQLServer.infra
 {
     public class UAClient
     {
         #region Private Fields
-        private ApplicationConfiguration m_configuration;
-        private List<Subscription> m_subscriptions;
-        private Session m_session;
-        private readonly IOutput m_output;
+        private ApplicationConfiguration _configuration;
+        private ObservableCollection<Tag> _tags;
+        private List<Subscription> _subscriptions;
+        private Session _session;
+        private readonly IOutput _output;
         private readonly XmlConfig _xmlConfig;
         private readonly ITopicEventSender _eventSender;
         private int TimeOut = 30000;
@@ -33,18 +36,22 @@ namespace GQLServer.infra
 
             _eventSender = eventSender;
             _xmlConfig = xmlParser.OpcUaXmlFileRead("XmlConfig.xml");
-            m_output = output;
-            m_configuration = CreateClientConfiguration();
+            _output = output;
+            _configuration = CreateClientConfiguration();
+            _tags= new ObservableCollection<Tag>();           
             ConnectAsync().Wait();
-            CreateSubscriptionsFromXml(_xmlConfig.XmlOpcUaServer.XmlOpcUaSubscriptions);
-        }
+            
+        }        
         #endregion
         #region Public Properties
         /// <summary>
         /// Gets the client session.
         /// </summary>
-        public Session Session => m_session;
-        public List<Subscription> Subscriptions => m_subscriptions;
+        public Session Session => _session;
+        //Gets the clients subscriptions
+        public List<Subscription> Subscriptions => _subscriptions;
+        //Gets the clients active tags 
+        public ObservableCollection<Tag> Tags => _tags;
         #endregion
         #region Public Methods
         /// <summary>
@@ -54,27 +61,27 @@ namespace GQLServer.infra
         {
             try
             {
-                if (m_session != null && m_session.Connected == true)
+                if (_session != null && _session.Connected == true)
                 {
-                    m_output.WriteLine("Session already connected!");
+                    _output.WriteLine("Session already connected!");
                 }
                 else
                 {
-                    m_output.WriteLine("Connecting...");
+                    _output.WriteLine("Connecting...");
 
                     // Get the endpoint by connecting to server's discovery endpoint.
                     // Try to find the first endopint without security.
                     EndpointDescription endpointDescription = CoreClientUtils.SelectEndpoint(_xmlConfig.XmlOpcUaServer.XmlOpcUrl, false);
-                    EndpointConfiguration endpointConfiguration = EndpointConfiguration.Create(m_configuration);
+                    EndpointConfiguration endpointConfiguration = EndpointConfiguration.Create(_configuration);
                     ConfiguredEndpoint endpoint = new ConfiguredEndpoint(null, endpointDescription, endpointConfiguration);
 
                     // Create the session
                     Session session = await Session.Create(
-                        m_configuration,
+                        _configuration,
                         endpoint,
                         false,
                         false,
-                        m_configuration.ApplicationName,
+                        _configuration.ApplicationName,
                         30 * 60 * 1000,
                         new UserIdentity(),
                         null
@@ -82,21 +89,31 @@ namespace GQLServer.infra
 
                     if (session != null && session.Connected)
                     {
-                        m_session = session;
+                        _session = session;
                     }
 
                     // Session created successfully.
-                    m_output.WriteLine($"New Session Created with SessionName = {m_session.SessionName}");
-                }
-
-                return true;
+                    _output.WriteLine($"New Session Created with SessionName = {_session.SessionName}");
+                }                
             }
             catch (Exception ex)
             {
                 // Log Error
-                m_output.WriteLine($"Create Session Error : {ex.Message}");
+                _output.WriteLine($"Create Session Error : {ex.Message}");
                 return false;
             }
+            try
+            {
+                CreateSubscriptionsFromXml(_xmlConfig.XmlOpcUaServer.XmlOpcUaSubscriptions);
+                _output.WriteLine(" Subscriptions created and added to session");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _output.WriteLine($"Create Subscription error: {ex.Message}");
+                return false;
+            }
+            
         }
 
         /// <summary>
@@ -106,33 +123,33 @@ namespace GQLServer.infra
         {
             try
             {
-                if (m_session != null)
+                if (_session != null)
                 {
-                    m_output.WriteLine("Disconnecting...");
+                    _output.WriteLine("Disconnecting...");
 
-                    m_session.Close();
-                    m_session.Dispose();
-                    m_session = null;
+                    _session.Close();
+                    _session.Dispose();
+                    _session = null;
 
                     // Log Session Disconnected event
-                    m_output.WriteLine("Session Disconnected.");
+                    _output.WriteLine("Session Disconnected.");
                 }
                 else
                 {
-                    m_output.WriteLine("Session not created!");
+                    _output.WriteLine("Session not created!");
                 }
             }
             catch (Exception ex)
             {
                 // Log Error
-                m_output.WriteLine($"Disconnect Error : {ex.Message}");
+                _output.WriteLine($"Disconnect Error : {ex.Message}");
             }
         }
         #endregion
-        #region Private Methords
+        #region Private Methods
         private void CreateSubscriptionsFromXml(List<XmlOpcUaSubscription> xmlSubscriptions)
         {
-            m_subscriptions = new List<Subscription>();
+            _subscriptions = new List<Subscription>();
 
             foreach (XmlOpcUaSubscription xmlSub in xmlSubscriptions)
             {
@@ -163,13 +180,13 @@ namespace GQLServer.infra
                     }
 
                     // Subscription is added to the internal list.
-                    m_subscriptions.Add(sub);
+                    _subscriptions.Add(sub);
                 }
                 catch (Exception ex)
                 {
                     throw new Exception(" The subscription with the interval " + xmlSub.XmlPublishingInterval + " from the server " + _xmlConfig.XmlOpcUaServer.XmlOpcUrl + " could not be created ", ex);
                 }
-                foreach (Subscription sub in m_subscriptions)
+                foreach (Subscription sub in _subscriptions)
                 {
                     try
                     {
@@ -195,7 +212,6 @@ namespace GQLServer.infra
                 QueueSize = 1, // intermediate buffer size
                 DiscardOldest = true
             };
-
             // An action on data change is added to each monitored item
             monitoredItem.Notification += WriteDataOnNotificationAsync;
             // monitoredItem.Notification + = WriteConsoleOnNotification;
@@ -204,6 +220,8 @@ namespace GQLServer.infra
             {
                 throw ServiceResultException.Create(monitoredItem.Status.Error.StatusCode.Code, " Creation of the monitored item failed ");
             }
+            Tag tag = new Tag{ TagName = opcvariable.XmlVarLabel};
+            _tags.Add(tag);
             // return
             return monitoredItem;
         }
@@ -217,7 +235,7 @@ namespace GQLServer.infra
             }
 
             // Make sure that each polling interval is configured only once.
-            foreach (Subscription sub in m_subscriptions)
+            foreach (Subscription sub in _subscriptions)
             {
                 if (sub.PublishingInterval == publishingInterval)
                 {
@@ -257,7 +275,7 @@ namespace GQLServer.infra
             subscription.DisplayName = " Subscription_ " + Convert.ToString(subscription.PublishingInterval);
 
             // Add the subscription to the session.
-            m_session.AddSubscription(subscription);
+            _session.AddSubscription(subscription);
 
             // The subscription is created on the session.
             subscription.Create();
@@ -265,9 +283,8 @@ namespace GQLServer.infra
 
         private async void WriteDataOnNotificationAsync(MonitoredItem monitoredItem, MonitoredItemNotificationEventArgs e)
         {
-            var tag = new Tag();
-            var value = (MonitoredItemNotification)monitoredItem.LastValue;
-            tag.TagName = monitoredItem.DisplayName;
+            var tag = _tags.Where(t => monitoredItem.DisplayName == t.TagName).FirstOrDefault();
+            var value = (MonitoredItemNotification)monitoredItem.LastValue;            
             tag.Value = value.Value.WrappedValue.Value.ToString();
             await _eventSender.SendAsync(nameof(GQLSubscription.OnTagUpdated), tag);
         }

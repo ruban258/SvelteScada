@@ -30,7 +30,8 @@ namespace GQLServer
             {
                 app.UseDeveloperExceptionPage();
             }
-
+            app.UseDefaultFiles();
+            app.UseStaticFiles();
             app.UseRouting();
             app.UseWebSockets();
 

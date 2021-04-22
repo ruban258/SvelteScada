@@ -1,5 +1,5 @@
 
-*Note that you will need to have [Node.js](https://nodejs.org) installed.*
+*Note that you will need to have [Node.js](https://nodejs.org) and dotnet 5.0 sdk installed.*
 
 
 ## Get started

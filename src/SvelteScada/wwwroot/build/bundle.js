@@ -12978,11 +12978,11 @@ var app = (function () {
 
     function get_each_context(ctx, list, i) {
     	const child_ctx = ctx.slice();
-    	child_ctx[3] = list[i];
+    	child_ctx[4] = list[i];
     	return child_ctx;
     }
 
-    // (64:22) 
+    // (72:22) 
     function create_if_block_3(ctx) {
     	let t0;
     	let t1_value = /*$tag*/ ctx[1].data.onTagUpdated.tagName + "";
@@ -13020,14 +13020,14 @@ var app = (function () {
     		block,
     		id: create_if_block_3.name,
     		type: "if",
-    		source: "(64:22) ",
+    		source: "(72:22) ",
     		ctx
     	});
 
     	return block;
     }
 
-    // (62:2) {#if $tag.loading}
+    // (70:2) {#if $tag.loading}
     function create_if_block_2(ctx) {
     	let h1;
 
@@ -13035,7 +13035,7 @@ var app = (function () {
     		c: function create() {
     			h1 = element("h1");
     			h1.textContent = "Waiting for new update...";
-    			add_location(h1, file, 62, 2, 1560);
+    			add_location(h1, file, 70, 2, 1909);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, h1, anchor);
@@ -13050,14 +13050,14 @@ var app = (function () {
     		block,
     		id: create_if_block_2.name,
     		type: "if",
-    		source: "(62:2) {#if $tag.loading}",
+    		source: "(70:2) {#if $tag.loading}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (73:2) {:else}
+    // (81:2) {:else}
     function create_else_block(ctx) {
     	let each_1_anchor;
     	let each_value = /*$tags*/ ctx[0].data.tags;
@@ -13118,14 +13118,14 @@ var app = (function () {
     		block,
     		id: create_else_block.name,
     		type: "else",
-    		source: "(73:2) {:else}",
+    		source: "(81:2) {:else}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (71:24) 
+    // (79:24) 
     function create_if_block_1(ctx) {
     	let t0;
     	let t1_value = /*$tags*/ ctx[0].error.message + "";
@@ -13153,14 +13153,14 @@ var app = (function () {
     		block,
     		id: create_if_block_1.name,
     		type: "if",
-    		source: "(71:24) ",
+    		source: "(79:24) ",
     		ctx
     	});
 
     	return block;
     }
 
-    // (69:2) {#if $tags.loading}
+    // (77:2) {#if $tags.loading}
     function create_if_block(ctx) {
     	let t;
 
@@ -13181,19 +13181,19 @@ var app = (function () {
     		block,
     		id: create_if_block.name,
     		type: "if",
-    		source: "(69:2) {#if $tags.loading}",
+    		source: "(77:2) {#if $tags.loading}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (74:2) {#each $tags.data.tags as tag}
+    // (82:2) {#each $tags.data.tags as tag}
     function create_each_block(ctx) {
-    	let t0_value = /*tag*/ ctx[3].tagName + "";
+    	let t0_value = /*tag*/ ctx[4].tagName + "";
     	let t0;
     	let t1;
-    	let t2_value = /*tag*/ ctx[3].value + "";
+    	let t2_value = /*tag*/ ctx[4].value + "";
     	let t2;
 
     	const block = {
@@ -13208,8 +13208,8 @@ var app = (function () {
     			insert_dev(target, t2, anchor);
     		},
     		p: function update(ctx, dirty) {
-    			if (dirty & /*$tags*/ 1 && t0_value !== (t0_value = /*tag*/ ctx[3].tagName + "")) set_data_dev(t0, t0_value);
-    			if (dirty & /*$tags*/ 1 && t2_value !== (t2_value = /*tag*/ ctx[3].value + "")) set_data_dev(t2, t2_value);
+    			if (dirty & /*$tags*/ 1 && t0_value !== (t0_value = /*tag*/ ctx[4].tagName + "")) set_data_dev(t0, t0_value);
+    			if (dirty & /*$tags*/ 1 && t2_value !== (t2_value = /*tag*/ ctx[4].value + "")) set_data_dev(t2, t2_value);
     		},
     		d: function destroy(detaching) {
     			if (detaching) detach_dev(t0);
@@ -13222,7 +13222,7 @@ var app = (function () {
     		block,
     		id: create_each_block.name,
     		type: "each",
-    		source: "(74:2) {#each $tags.data.tags as tag}",
+    		source: "(82:2) {#each $tags.data.tags as tag}",
     		ctx
     	});
 
@@ -13256,7 +13256,7 @@ var app = (function () {
     			if (if_block0) if_block0.c();
     			t = space();
     			if_block1.c();
-    			add_location(main, file, 60, 0, 1530);
+    			add_location(main, file, 68, 0, 1879);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -13318,6 +13318,7 @@ var app = (function () {
 
     function instance($$self, $$props, $$invalidate) {
     	let $tags;
+    	let $allTags;
     	let $tag;
     	let { $$slots: slots = {}, $$scope } = $$props;
     	validate_slots("App", slots, []);
@@ -13357,6 +13358,9 @@ var app = (function () {
 }`;
 
     	setClient(client);
+    	let allTags = writable([]);
+    	validate_store(allTags, "allTags");
+    	component_subscribe($$self, allTags, value => $$invalidate(5, $allTags = value));
     	const tag = subscribe(READ_TAG, { fetchPolicy: "cache-and-network" });
     	validate_store(tag, "tag");
     	component_subscribe($$self, tag, value => $$invalidate(1, $tag = value));
@@ -13364,14 +13368,21 @@ var app = (function () {
     	validate_store(tags, "tags");
     	component_subscribe($$self, tags, value => $$invalidate(0, $tags = value));
 
-    	tag.subscribe(data => {
+    	tags.subscribe(event => {
+    		allTags.set(event.data);
+    	});
+
+    	//tags.subscribe(event => console.log(JSON.stringify(event.data)));
+    	tag.subscribe(event => {
     		if ($tags.loading) {
     			console.log("loading");
-    		} else if ($tags.data) {
-    			const tag = data.onTagUpdated;
+    		} else if ($tags.data && $allTags.tags) {
+    			const objIndex = $allTags.tags.findIndex(obj => obj.tagName == event.data.onTagUpdated.tagName);
 
-    			//objIndex = $tags.data.tags.findIndex((obj => obj.tagName == data.onTagUpdated.value));
-    			console.log(tag);
+    			//allTags.update(n => n.tags[objIndex].value = event.data.onTagUpdated.value);
+    			$allTags.update(n => n.tags[objIndex].value = 100);
+
+    			console.log($allTags.tags);
     		}
     	});
 
@@ -13392,19 +13403,30 @@ var app = (function () {
     		subscribe,
     		setClient,
     		createHttpLink,
+    		writable,
     		wsLink,
     		httpLink,
     		splitLink,
     		client,
     		READ_ALL_TAGS,
     		READ_TAG,
+    		allTags,
     		tag,
     		tags,
     		$tags,
+    		$allTags,
     		$tag
     	});
 
-    	return [$tags, $tag, tags, tag];
+    	$$self.$inject_state = $$props => {
+    		if ("allTags" in $$props) $$invalidate(2, allTags = $$props.allTags);
+    	};
+
+    	if ($$props && "$$inject" in $$props) {
+    		$$self.$inject_state($$props.$$inject);
+    	}
+
+    	return [$tags, $tag, allTags, tags, tag];
     }
 
     class App extends SvelteComponentDev {

@@ -1,91 +1,60 @@
 <script>
-  import { ApolloClient,InMemoryCache,split,} from "@apollo/client";
-	import { getMainDefinition } from "@apollo/client/utilities";
-	import { WebSocketLink } from "@apollo/link-ws";
-  import { gql } from "@apollo/client";
   import { query, subscribe } from "svelte-apollo";
 	import { setClient } from "svelte-apollo";
-  import { createHttpLink } from 'apollo-link-http';
-  import { writable } from 'svelte/store';  
-  const wsLink = new WebSocketLink({
-    uri: "wss://localhost:5001/graphql",
-    options: {
-      reconnect: true
-    }
-  });
-  const httpLink = createHttpLink({uri: 'https://localhost:5001/graphql/'});
+  import {allTags} from './Stores.js';
+  import {client, READ_ALL_TAGS, READ_TAG} from './GraphQLClient';
+  
+  setClient(client);
 
-  const splitLink = split(
-    ({ query }) => {
-      const definition = getMainDefinition(query);
-      return (
-        definition.kind === 'OperationDefinition' &&
-        definition.operation === 'subscription'
-      );
-    },
-    wsLink,
-    httpLink,
-  );
-const client = new ApolloClient({
-  link: splitLink,
-  cache: new InMemoryCache()
-});
-       
-const READ_ALL_TAGS = gql`query{
-  tags{
-    tagName
-    value
-  }}`;
+  const tag = subscribe(READ_TAG, {fetchPolicy: "cache-and-network",});
+  const tags = query(READ_ALL_TAGS, {fetchPolicy: "cache-and-network",});
 
-const READ_TAG = gql`subscription{
-    onTagUpdated{
-    tagName
-    value
-  }
-}`;
-setClient(client);
-let allTags = writable([]);
-const tag = subscribe(READ_TAG, {fetchPolicy: "cache-and-network",});
-const tags = query(READ_ALL_TAGS, {fetchPolicy: "cache-and-network",});
-
-tags.subscribe(event => {
-  allTags.set(event.data); 
-});
-
-//tags.subscribe(event => console.log(JSON.stringify(event.data)));
-tag.subscribe(event =>{
-  if($tags.loading){    
-    console.log("loading")}
-  else if ($tags.data && $allTags.tags){
-    const objIndex = $allTags.tags.findIndex((obj => obj.tagName == event.data.onTagUpdated.tagName));    
-    //allTags.update(n => n.tags[objIndex].value = event.data.onTagUpdated.value);
-    $allTags.update(n => n.tags[objIndex].value = 100);
-    console.log($allTags.tags);
-    
+  tags.subscribe(event => {
+    if(event.loading){    
+      console.log("loading")}
+    else if (event.data){
+    let localtags = event.data.tags;  
+    allTags.set(localtags);
   }});
 
-  
+  //tags.subscribe(event => console.log(JSON.stringify(event.data)));
+  tag.subscribe(event =>{
+      if($tags.loading){    
+      console.log("loading")}
+    else if ($tags.data && $allTags){    
+      $allTags = $allTags.map(p => p.tagName === event.data.onTagUpdated.tagName ? { ...p, value: event.data.onTagUpdated.value }: p);
+    }});  
 </script>
 <main>
-  {#if $tag.loading}
-  <h1>Waiting for new update...</h1>
-  {:else if $tag.data}
-  Tag Updated: {$tag.data.onTagUpdated.tagName}
-  Tag Value: {$tag.data.onTagUpdated.value}
-  {/if}
-
-  {#if $tags.loading}
-  Loading...
-  {:else if $tags.error}
-  Error: {$tags.error.message}
-  {:else}
-  {#each $tags.data.tags as tag}
-    {tag.tagName} with {tag.value}
-  {/each}
-  {/if}
-                  
+  <nav class="bg-blue-900 shadow-lg">
+    <div class="container mx-auto">
+      <div class="sm:flex">
+        <a href class="text-white text-3xl font-bold p-3">APP LOGO</a>       
+        <!-- Menus -->
+        <div class="ml-55 mt-4">
+          <ul class="text-white sm:self-center text-xl">
+            <li class="sm:inline-block">
+              <a href class="p-3 hover:text-red-900">About</a>
+            </li>
+            <li class="sm:inline-block">
+              <a href class="p-3 hover:text-red-900">Services</a>
+            </li>
+            <li class="sm:inline-block">
+              <a href class="p-3 hover:text-red-900">Blog</a>
+            </li>
+            <li class="sm:inline-block">
+              <a href class="p-3 hover:text-red-900">Contact</a>
+            </li>
+          </ul>
+        </div>  
+      </div>
+    </div>
+  </nav>
 </main>
 
-<style>
-	
-</style>
+
+<style global lang="postcss">
+  @tailwind base;
+  @tailwind components;
+  @tailwind utilities;
+</style>	

@@ -1,5 +1,5 @@
 
-(function(l, r) { if (l.getElementById('livereloadscript')) return; r = l.createElement('script'); r.async = 1; r.src = '//' + (window.location.host || 'localhost').split(':')[0] + ':35729/livereload.js?snipver=1'; r.id = 'livereloadscript'; l.getElementsByTagName('head')[0].appendChild(r) })(window.document);
+(function(l, r) { if (l.getElementById('livereloadscript')) return; r = l.createElement('script'); r.async = 1; r.src = '//' + (window.location.host || 'localhost').split(':')[0] + ':35730/livereload.js?snipver=1'; r.id = 'livereloadscript'; l.getElementsByTagName('head')[0].appendChild(r) })(window.document);
 var app = (function () {
     'use strict';
 
@@ -42,6 +42,10 @@ var app = (function () {
     function component_subscribe(component, store, callback) {
         component.$$.on_destroy.push(subscribe$1(store, callback));
     }
+    function set_store_value(store, ret, value = ret) {
+        store.set(value);
+        return ret;
+    }
 
     function append(target, node) {
         target.appendChild(node);
@@ -52,12 +56,6 @@ var app = (function () {
     function detach(node) {
         node.parentNode.removeChild(node);
     }
-    function destroy_each(iterations, detaching) {
-        for (let i = 0; i < iterations.length; i += 1) {
-            if (iterations[i])
-                iterations[i].d(detaching);
-        }
-    }
     function element(name) {
         return document.createElement(name);
     }
@@ -67,8 +65,11 @@ var app = (function () {
     function space() {
         return text(' ');
     }
-    function empty$1() {
-        return text('');
+    function attr(node, attribute, value) {
+        if (value == null)
+            node.removeAttribute(attribute);
+        else if (node.getAttribute(attribute) !== value)
+            node.setAttribute(attribute, value);
     }
     function children(element) {
         return Array.from(element.childNodes);
@@ -310,21 +311,12 @@ var app = (function () {
         dispatch_dev('SvelteDOMRemove', { node });
         detach(node);
     }
-    function set_data_dev(text, data) {
-        data = '' + data;
-        if (text.wholeText === data)
-            return;
-        dispatch_dev('SvelteDOMSetData', { node: text, data });
-        text.data = data;
-    }
-    function validate_each_argument(arg) {
-        if (typeof arg !== 'string' && !(arg && typeof arg === 'object' && 'length' in arg)) {
-            let msg = '{#each} only iterates over array-like objects.';
-            if (typeof Symbol === 'function' && arg && Symbol.iterator in arg) {
-                msg += ' You can use a spread to convert this iterable into an array.';
-            }
-            throw new Error(msg);
-        }
+    function attr_dev(node, attribute, value) {
+        attr(node, attribute, value);
+        if (value == null)
+            dispatch_dev('SvelteDOMRemoveAttribute', { node, attribute });
+        else
+            dispatch_dev('SvelteDOMSetAttribute', { node, attribute, value });
     }
     function validate_slots(name, slot, keys) {
         for (const slot_key of Object.keys(slot)) {
@@ -11187,6 +11179,193 @@ var app = (function () {
     setVerbosity("log");
     gql$1.resetCaches; gql$1.disableFragmentWarnings; gql$1.enableExperimentalFragmentVariables; gql$1.disableExperimentalFragmentVariables;
 
+    const subscriber_queue = [];
+    /**
+     * Creates a `Readable` store that allows reading by subscription.
+     * @param value initial value
+     * @param {StartStopNotifier}start start and stop notifications for subscriptions
+     */
+    function readable(value, start) {
+        return {
+            subscribe: writable(value, start).subscribe
+        };
+    }
+    /**
+     * Create a `Writable` store that allows both updating and reading by subscription.
+     * @param {*=}value initial value
+     * @param {StartStopNotifier=}start start and stop notifications for subscriptions
+     */
+    function writable(value, start = noop) {
+        let stop;
+        const subscribers = [];
+        function set(new_value) {
+            if (safe_not_equal(value, new_value)) {
+                value = new_value;
+                if (stop) { // store is ready
+                    const run_queue = !subscriber_queue.length;
+                    for (let i = 0; i < subscribers.length; i += 1) {
+                        const s = subscribers[i];
+                        s[1]();
+                        subscriber_queue.push(s, value);
+                    }
+                    if (run_queue) {
+                        for (let i = 0; i < subscriber_queue.length; i += 2) {
+                            subscriber_queue[i][0](subscriber_queue[i + 1]);
+                        }
+                        subscriber_queue.length = 0;
+                    }
+                }
+            }
+        }
+        function update(fn) {
+            set(fn(value));
+        }
+        function subscribe(run, invalidate = noop) {
+            const subscriber = [run, invalidate];
+            subscribers.push(subscriber);
+            if (subscribers.length === 1) {
+                stop = start(set) || noop;
+            }
+            run(value);
+            return () => {
+                const index = subscribers.indexOf(subscriber);
+                if (index !== -1) {
+                    subscribers.splice(index, 1);
+                }
+                if (subscribers.length === 0) {
+                    stop();
+                    stop = null;
+                }
+            };
+        }
+        return { set, update, subscribe };
+    }
+
+    var CLIENT = typeof Symbol !== "undefined" ? Symbol("client") : "@@client";
+    function getClient() {
+        var client = getContext(CLIENT);
+        if (!client) {
+            throw new Error("ApolloClient has not been set yet, use setClient(new ApolloClient({ ... })) to define it");
+        }
+        return client;
+    }
+    function setClient(client) {
+        setContext(CLIENT, client);
+    }
+
+    /*! *****************************************************************************
+    Copyright (c) Microsoft Corporation.
+
+    Permission to use, copy, modify, and/or distribute this software for any
+    purpose with or without fee is hereby granted.
+
+    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+    REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+    AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+    INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+    LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+    OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+    PERFORMANCE OF THIS SOFTWARE.
+    ***************************************************************************** */
+
+    var __assign = function() {
+        __assign = Object.assign || function __assign(t) {
+            for (var s, i = 1, n = arguments.length; i < n; i++) {
+                s = arguments[i];
+                for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
+            }
+            return t;
+        };
+        return __assign.apply(this, arguments);
+    };
+
+    function observableToReadable(observable, initialValue) {
+        if (initialValue === void 0) { initialValue = {
+            loading: true,
+            data: undefined,
+            error: undefined,
+        }; }
+        var store = readable(initialValue, function (set) {
+            var skipDuplicate = (initialValue === null || initialValue === void 0 ? void 0 : initialValue.data) !== undefined;
+            var skipped = false;
+            var subscription = observable.subscribe(function (result) {
+                if (skipDuplicate && !skipped) {
+                    skipped = true;
+                    return;
+                }
+                if (result.errors) {
+                    var error = new ApolloError({ graphQLErrors: result.errors });
+                    set({ loading: false, data: undefined, error: error });
+                }
+                else {
+                    set({ loading: false, data: result.data, error: undefined });
+                }
+            }, function (error) { return set({ loading: false, data: undefined, error: error }); });
+            return function () { return subscription.unsubscribe(); };
+        });
+        return store;
+    }
+    var extensions = [
+        "fetchMore",
+        "getCurrentResult",
+        "getLastError",
+        "getLastResult",
+        "isDifferentFromLastResult",
+        "refetch",
+        "resetLastResults",
+        "resetQueryStoreErrors",
+        "result",
+        "setOptions",
+        "setVariables",
+        "startPolling",
+        "stopPolling",
+        "subscribeToMore",
+        "updateQuery",
+    ];
+    function observableQueryToReadable(query, initialValue) {
+        var store = observableToReadable(query, initialValue);
+        for (var _i = 0, extensions_1 = extensions; _i < extensions_1.length; _i++) {
+            var extension = extensions_1[_i];
+            store[extension] = query[extension].bind(query);
+        }
+        return store;
+    }
+
+    var restoring = typeof WeakSet !== "undefined" ? new WeakSet() : new Set();
+
+    function query(query, options) {
+        if (options === void 0) { options = {}; }
+        var client = getClient();
+        var queryOptions = __assign(__assign({}, options), { query: query });
+        // If client is restoring (e.g. from SSR), attempt synchronous readQuery first
+        var initialValue;
+        if (restoring.has(client)) {
+            try {
+                // undefined = skip initial value (not in cache)
+                initialValue = client.readQuery(queryOptions) || undefined;
+            }
+            catch (err) {
+                // Ignore preload errors
+            }
+        }
+        var observable = client.watchQuery(queryOptions);
+        var store = observableQueryToReadable(observable, initialValue !== undefined
+            ? {
+                data: initialValue,
+            }
+            : undefined);
+        return store;
+    }
+
+    function subscribe(query, options) {
+        if (options === void 0) { options = {}; }
+        var client = getClient();
+        var observable = client.subscribe(__assign({ query: query }, options));
+        return observableToReadable(observable);
+    }
+
+    var allTags = writable([]);
+
     /**
      * Expose `Backoff`.
      */
@@ -11728,7 +11907,7 @@ var app = (function () {
 
     var symbol_observable_1 = /*@__PURE__*/getAugmentedNamespace(es);
 
-    var client = createCommonjsModule(function (module, exports) {
+    var client$1 = createCommonjsModule(function (module, exports) {
     var __assign = (commonjsGlobal && commonjsGlobal.__assign) || function () {
         __assign = Object.assign || function(t) {
             for (var s, i = 1, n = arguments.length; i < n; i++) {
@@ -12294,11 +12473,11 @@ var app = (function () {
         __extends$1(WebSocketLink, _super);
         function WebSocketLink(paramsOrClient) {
             var _this = _super.call(this) || this;
-            if (paramsOrClient instanceof client.SubscriptionClient) {
+            if (paramsOrClient instanceof client$1.SubscriptionClient) {
                 _this.subscriptionClient = paramsOrClient;
             }
             else {
-                _this.subscriptionClient = new client.SubscriptionClient(paramsOrClient.uri, paramsOrClient.options, paramsOrClient.webSocketImpl);
+                _this.subscriptionClient = new client$1.SubscriptionClient(paramsOrClient.uri, paramsOrClient.options, paramsOrClient.webSocketImpl);
             }
             return _this;
         }
@@ -12307,191 +12486,6 @@ var app = (function () {
         };
         return WebSocketLink;
     }(ApolloLink$1));
-
-    const subscriber_queue = [];
-    /**
-     * Creates a `Readable` store that allows reading by subscription.
-     * @param value initial value
-     * @param {StartStopNotifier}start start and stop notifications for subscriptions
-     */
-    function readable(value, start) {
-        return {
-            subscribe: writable(value, start).subscribe
-        };
-    }
-    /**
-     * Create a `Writable` store that allows both updating and reading by subscription.
-     * @param {*=}value initial value
-     * @param {StartStopNotifier=}start start and stop notifications for subscriptions
-     */
-    function writable(value, start = noop) {
-        let stop;
-        const subscribers = [];
-        function set(new_value) {
-            if (safe_not_equal(value, new_value)) {
-                value = new_value;
-                if (stop) { // store is ready
-                    const run_queue = !subscriber_queue.length;
-                    for (let i = 0; i < subscribers.length; i += 1) {
-                        const s = subscribers[i];
-                        s[1]();
-                        subscriber_queue.push(s, value);
-                    }
-                    if (run_queue) {
-                        for (let i = 0; i < subscriber_queue.length; i += 2) {
-                            subscriber_queue[i][0](subscriber_queue[i + 1]);
-                        }
-                        subscriber_queue.length = 0;
-                    }
-                }
-            }
-        }
-        function update(fn) {
-            set(fn(value));
-        }
-        function subscribe(run, invalidate = noop) {
-            const subscriber = [run, invalidate];
-            subscribers.push(subscriber);
-            if (subscribers.length === 1) {
-                stop = start(set) || noop;
-            }
-            run(value);
-            return () => {
-                const index = subscribers.indexOf(subscriber);
-                if (index !== -1) {
-                    subscribers.splice(index, 1);
-                }
-                if (subscribers.length === 0) {
-                    stop();
-                    stop = null;
-                }
-            };
-        }
-        return { set, update, subscribe };
-    }
-
-    var CLIENT = typeof Symbol !== "undefined" ? Symbol("client") : "@@client";
-    function getClient() {
-        var client = getContext(CLIENT);
-        if (!client) {
-            throw new Error("ApolloClient has not been set yet, use setClient(new ApolloClient({ ... })) to define it");
-        }
-        return client;
-    }
-    function setClient(client) {
-        setContext(CLIENT, client);
-    }
-
-    /*! *****************************************************************************
-    Copyright (c) Microsoft Corporation.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose with or without fee is hereby granted.
-
-    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
-    REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
-    AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
-    INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
-    LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-    OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-    PERFORMANCE OF THIS SOFTWARE.
-    ***************************************************************************** */
-
-    var __assign = function() {
-        __assign = Object.assign || function __assign(t) {
-            for (var s, i = 1, n = arguments.length; i < n; i++) {
-                s = arguments[i];
-                for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
-            }
-            return t;
-        };
-        return __assign.apply(this, arguments);
-    };
-
-    function observableToReadable(observable, initialValue) {
-        if (initialValue === void 0) { initialValue = {
-            loading: true,
-            data: undefined,
-            error: undefined,
-        }; }
-        var store = readable(initialValue, function (set) {
-            var skipDuplicate = (initialValue === null || initialValue === void 0 ? void 0 : initialValue.data) !== undefined;
-            var skipped = false;
-            var subscription = observable.subscribe(function (result) {
-                if (skipDuplicate && !skipped) {
-                    skipped = true;
-                    return;
-                }
-                if (result.errors) {
-                    var error = new ApolloError({ graphQLErrors: result.errors });
-                    set({ loading: false, data: undefined, error: error });
-                }
-                else {
-                    set({ loading: false, data: result.data, error: undefined });
-                }
-            }, function (error) { return set({ loading: false, data: undefined, error: error }); });
-            return function () { return subscription.unsubscribe(); };
-        });
-        return store;
-    }
-    var extensions = [
-        "fetchMore",
-        "getCurrentResult",
-        "getLastError",
-        "getLastResult",
-        "isDifferentFromLastResult",
-        "refetch",
-        "resetLastResults",
-        "resetQueryStoreErrors",
-        "result",
-        "setOptions",
-        "setVariables",
-        "startPolling",
-        "stopPolling",
-        "subscribeToMore",
-        "updateQuery",
-    ];
-    function observableQueryToReadable(query, initialValue) {
-        var store = observableToReadable(query, initialValue);
-        for (var _i = 0, extensions_1 = extensions; _i < extensions_1.length; _i++) {
-            var extension = extensions_1[_i];
-            store[extension] = query[extension].bind(query);
-        }
-        return store;
-    }
-
-    var restoring = typeof WeakSet !== "undefined" ? new WeakSet() : new Set();
-
-    function query(query, options) {
-        if (options === void 0) { options = {}; }
-        var client = getClient();
-        var queryOptions = __assign(__assign({}, options), { query: query });
-        // If client is restoring (e.g. from SSR), attempt synchronous readQuery first
-        var initialValue;
-        if (restoring.has(client)) {
-            try {
-                // undefined = skip initial value (not in cache)
-                initialValue = client.readQuery(queryOptions) || undefined;
-            }
-            catch (err) {
-                // Ignore preload errors
-            }
-        }
-        var observable = client.watchQuery(queryOptions);
-        var store = observableQueryToReadable(observable, initialValue !== undefined
-            ? {
-                data: initialValue,
-            }
-            : undefined);
-        return store;
-    }
-
-    function subscribe(query, options) {
-        if (options === void 0) { options = {}; }
-        var client = getClient();
-        var observable = client.subscribe(__assign({ query: query }, options));
-        return observableToReadable(observable);
-    }
 
     var Observable = zenObservable;
 
@@ -12971,337 +12965,159 @@ var app = (function () {
         return HttpLink;
     })(ApolloLink));
 
+    const wsLink = new WebSocketLink({
+    uri: "wss://localhost:5001/graphql",
+    options: {
+        reconnect: true
+    }
+    });
+    const httpLink = createHttpLink({uri: 'https://localhost:5001/graphql/'});
+
+    const splitLink = split$1(
+    ({ query }) => {
+        const definition = getMainDefinition(query);
+        return (
+        definition.kind === 'OperationDefinition' &&
+        definition.operation === 'subscription'
+        );
+    },
+    wsLink,
+    httpLink,
+    );
+    const client = new ApolloClient({
+      link: splitLink,
+      cache: new InMemoryCache()
+    });
+           
+    const READ_ALL_TAGS = gql$1`query{
+  tags{
+    tagName
+    value
+  }}`;
+
+    const READ_TAG = gql$1`subscription{
+    onTagUpdated{
+    tagName
+    value
+  }
+}`;
+
     /* svelte-app\App.svelte generated by Svelte v3.37.0 */
 
     const { console: console_1 } = globals;
     const file = "svelte-app\\App.svelte";
 
-    function get_each_context(ctx, list, i) {
-    	const child_ctx = ctx.slice();
-    	child_ctx[4] = list[i];
-    	return child_ctx;
-    }
-
-    // (72:22) 
-    function create_if_block_3(ctx) {
-    	let t0;
-    	let t1_value = /*$tag*/ ctx[1].data.onTagUpdated.tagName + "";
-    	let t1;
-    	let t2;
-    	let t3_value = /*$tag*/ ctx[1].data.onTagUpdated.value + "";
-    	let t3;
-
-    	const block = {
-    		c: function create() {
-    			t0 = text("Tag Updated: ");
-    			t1 = text(t1_value);
-    			t2 = text("\n  Tag Value: ");
-    			t3 = text(t3_value);
-    		},
-    		m: function mount(target, anchor) {
-    			insert_dev(target, t0, anchor);
-    			insert_dev(target, t1, anchor);
-    			insert_dev(target, t2, anchor);
-    			insert_dev(target, t3, anchor);
-    		},
-    		p: function update(ctx, dirty) {
-    			if (dirty & /*$tag*/ 2 && t1_value !== (t1_value = /*$tag*/ ctx[1].data.onTagUpdated.tagName + "")) set_data_dev(t1, t1_value);
-    			if (dirty & /*$tag*/ 2 && t3_value !== (t3_value = /*$tag*/ ctx[1].data.onTagUpdated.value + "")) set_data_dev(t3, t3_value);
-    		},
-    		d: function destroy(detaching) {
-    			if (detaching) detach_dev(t0);
-    			if (detaching) detach_dev(t1);
-    			if (detaching) detach_dev(t2);
-    			if (detaching) detach_dev(t3);
-    		}
-    	};
-
-    	dispatch_dev("SvelteRegisterBlock", {
-    		block,
-    		id: create_if_block_3.name,
-    		type: "if",
-    		source: "(72:22) ",
-    		ctx
-    	});
-
-    	return block;
-    }
-
-    // (70:2) {#if $tag.loading}
-    function create_if_block_2(ctx) {
-    	let h1;
-
-    	const block = {
-    		c: function create() {
-    			h1 = element("h1");
-    			h1.textContent = "Waiting for new update...";
-    			add_location(h1, file, 70, 2, 1909);
-    		},
-    		m: function mount(target, anchor) {
-    			insert_dev(target, h1, anchor);
-    		},
-    		p: noop,
-    		d: function destroy(detaching) {
-    			if (detaching) detach_dev(h1);
-    		}
-    	};
-
-    	dispatch_dev("SvelteRegisterBlock", {
-    		block,
-    		id: create_if_block_2.name,
-    		type: "if",
-    		source: "(70:2) {#if $tag.loading}",
-    		ctx
-    	});
-
-    	return block;
-    }
-
-    // (81:2) {:else}
-    function create_else_block(ctx) {
-    	let each_1_anchor;
-    	let each_value = /*$tags*/ ctx[0].data.tags;
-    	validate_each_argument(each_value);
-    	let each_blocks = [];
-
-    	for (let i = 0; i < each_value.length; i += 1) {
-    		each_blocks[i] = create_each_block(get_each_context(ctx, each_value, i));
-    	}
-
-    	const block = {
-    		c: function create() {
-    			for (let i = 0; i < each_blocks.length; i += 1) {
-    				each_blocks[i].c();
-    			}
-
-    			each_1_anchor = empty$1();
-    		},
-    		m: function mount(target, anchor) {
-    			for (let i = 0; i < each_blocks.length; i += 1) {
-    				each_blocks[i].m(target, anchor);
-    			}
-
-    			insert_dev(target, each_1_anchor, anchor);
-    		},
-    		p: function update(ctx, dirty) {
-    			if (dirty & /*$tags*/ 1) {
-    				each_value = /*$tags*/ ctx[0].data.tags;
-    				validate_each_argument(each_value);
-    				let i;
-
-    				for (i = 0; i < each_value.length; i += 1) {
-    					const child_ctx = get_each_context(ctx, each_value, i);
-
-    					if (each_blocks[i]) {
-    						each_blocks[i].p(child_ctx, dirty);
-    					} else {
-    						each_blocks[i] = create_each_block(child_ctx);
-    						each_blocks[i].c();
-    						each_blocks[i].m(each_1_anchor.parentNode, each_1_anchor);
-    					}
-    				}
-
-    				for (; i < each_blocks.length; i += 1) {
-    					each_blocks[i].d(1);
-    				}
-
-    				each_blocks.length = each_value.length;
-    			}
-    		},
-    		d: function destroy(detaching) {
-    			destroy_each(each_blocks, detaching);
-    			if (detaching) detach_dev(each_1_anchor);
-    		}
-    	};
-
-    	dispatch_dev("SvelteRegisterBlock", {
-    		block,
-    		id: create_else_block.name,
-    		type: "else",
-    		source: "(81:2) {:else}",
-    		ctx
-    	});
-
-    	return block;
-    }
-
-    // (79:24) 
-    function create_if_block_1(ctx) {
-    	let t0;
-    	let t1_value = /*$tags*/ ctx[0].error.message + "";
-    	let t1;
-
-    	const block = {
-    		c: function create() {
-    			t0 = text("Error: ");
-    			t1 = text(t1_value);
-    		},
-    		m: function mount(target, anchor) {
-    			insert_dev(target, t0, anchor);
-    			insert_dev(target, t1, anchor);
-    		},
-    		p: function update(ctx, dirty) {
-    			if (dirty & /*$tags*/ 1 && t1_value !== (t1_value = /*$tags*/ ctx[0].error.message + "")) set_data_dev(t1, t1_value);
-    		},
-    		d: function destroy(detaching) {
-    			if (detaching) detach_dev(t0);
-    			if (detaching) detach_dev(t1);
-    		}
-    	};
-
-    	dispatch_dev("SvelteRegisterBlock", {
-    		block,
-    		id: create_if_block_1.name,
-    		type: "if",
-    		source: "(79:24) ",
-    		ctx
-    	});
-
-    	return block;
-    }
-
-    // (77:2) {#if $tags.loading}
-    function create_if_block(ctx) {
-    	let t;
-
-    	const block = {
-    		c: function create() {
-    			t = text("Loading...");
-    		},
-    		m: function mount(target, anchor) {
-    			insert_dev(target, t, anchor);
-    		},
-    		p: noop,
-    		d: function destroy(detaching) {
-    			if (detaching) detach_dev(t);
-    		}
-    	};
-
-    	dispatch_dev("SvelteRegisterBlock", {
-    		block,
-    		id: create_if_block.name,
-    		type: "if",
-    		source: "(77:2) {#if $tags.loading}",
-    		ctx
-    	});
-
-    	return block;
-    }
-
-    // (82:2) {#each $tags.data.tags as tag}
-    function create_each_block(ctx) {
-    	let t0_value = /*tag*/ ctx[4].tagName + "";
-    	let t0;
-    	let t1;
-    	let t2_value = /*tag*/ ctx[4].value + "";
-    	let t2;
-
-    	const block = {
-    		c: function create() {
-    			t0 = text(t0_value);
-    			t1 = text(" with ");
-    			t2 = text(t2_value);
-    		},
-    		m: function mount(target, anchor) {
-    			insert_dev(target, t0, anchor);
-    			insert_dev(target, t1, anchor);
-    			insert_dev(target, t2, anchor);
-    		},
-    		p: function update(ctx, dirty) {
-    			if (dirty & /*$tags*/ 1 && t0_value !== (t0_value = /*tag*/ ctx[4].tagName + "")) set_data_dev(t0, t0_value);
-    			if (dirty & /*$tags*/ 1 && t2_value !== (t2_value = /*tag*/ ctx[4].value + "")) set_data_dev(t2, t2_value);
-    		},
-    		d: function destroy(detaching) {
-    			if (detaching) detach_dev(t0);
-    			if (detaching) detach_dev(t1);
-    			if (detaching) detach_dev(t2);
-    		}
-    	};
-
-    	dispatch_dev("SvelteRegisterBlock", {
-    		block,
-    		id: create_each_block.name,
-    		type: "each",
-    		source: "(82:2) {#each $tags.data.tags as tag}",
-    		ctx
-    	});
-
-    	return block;
-    }
-
     function create_fragment(ctx) {
     	let main;
-    	let t;
-
-    	function select_block_type(ctx, dirty) {
-    		if (/*$tag*/ ctx[1].loading) return create_if_block_2;
-    		if (/*$tag*/ ctx[1].data) return create_if_block_3;
-    	}
-
-    	let current_block_type = select_block_type(ctx);
-    	let if_block0 = current_block_type && current_block_type(ctx);
-
-    	function select_block_type_1(ctx, dirty) {
-    		if (/*$tags*/ ctx[0].loading) return create_if_block;
-    		if (/*$tags*/ ctx[0].error) return create_if_block_1;
-    		return create_else_block;
-    	}
-
-    	let current_block_type_1 = select_block_type_1(ctx);
-    	let if_block1 = current_block_type_1(ctx);
+    	let nav;
+    	let div2;
+    	let div1;
+    	let a0;
+    	let t1;
+    	let div0;
+    	let ul;
+    	let li0;
+    	let a1;
+    	let t3;
+    	let li1;
+    	let a2;
+    	let t5;
+    	let li2;
+    	let a3;
+    	let t7;
+    	let li3;
+    	let a4;
 
     	const block = {
     		c: function create() {
     			main = element("main");
-    			if (if_block0) if_block0.c();
-    			t = space();
-    			if_block1.c();
-    			add_location(main, file, 68, 0, 1879);
+    			nav = element("nav");
+    			div2 = element("div");
+    			div1 = element("div");
+    			a0 = element("a");
+    			a0.textContent = "APP LOGO";
+    			t1 = space();
+    			div0 = element("div");
+    			ul = element("ul");
+    			li0 = element("li");
+    			a1 = element("a");
+    			a1.textContent = "About";
+    			t3 = space();
+    			li1 = element("li");
+    			a2 = element("a");
+    			a2.textContent = "Services";
+    			t5 = space();
+    			li2 = element("li");
+    			a3 = element("a");
+    			a3.textContent = "Blog";
+    			t7 = space();
+    			li3 = element("li");
+    			a4 = element("a");
+    			a4.textContent = "Contact";
+    			attr_dev(a0, "href", "");
+    			attr_dev(a0, "class", "text-white text-3xl font-bold p-3");
+    			add_location(a0, file, 31, 8, 1039);
+    			attr_dev(a1, "href", "");
+    			attr_dev(a1, "class", "p-3 hover:text-red-900");
+    			add_location(a1, file, 36, 14, 1277);
+    			attr_dev(li0, "class", "sm:inline-block");
+    			add_location(li0, file, 35, 12, 1234);
+    			attr_dev(a2, "href", "");
+    			attr_dev(a2, "class", "p-3 hover:text-red-900");
+    			add_location(a2, file, 39, 14, 1399);
+    			attr_dev(li1, "class", "sm:inline-block");
+    			add_location(li1, file, 38, 12, 1356);
+    			attr_dev(a3, "href", "");
+    			attr_dev(a3, "class", "p-3 hover:text-red-900");
+    			add_location(a3, file, 42, 14, 1524);
+    			attr_dev(li2, "class", "sm:inline-block");
+    			add_location(li2, file, 41, 12, 1481);
+    			attr_dev(a4, "href", "");
+    			attr_dev(a4, "class", "p-3 hover:text-red-900");
+    			add_location(a4, file, 45, 14, 1645);
+    			attr_dev(li3, "class", "sm:inline-block");
+    			add_location(li3, file, 44, 12, 1602);
+    			attr_dev(ul, "class", "text-white sm:self-center text-xl");
+    			add_location(ul, file, 34, 10, 1175);
+    			attr_dev(div0, "class", "ml-55 mt-4");
+    			add_location(div0, file, 33, 8, 1140);
+    			attr_dev(div1, "class", "sm:flex");
+    			add_location(div1, file, 30, 6, 1009);
+    			attr_dev(div2, "class", "container mx-auto");
+    			add_location(div2, file, 29, 4, 971);
+    			attr_dev(nav, "class", "bg-blue-900 shadow-lg");
+    			add_location(nav, file, 28, 2, 931);
+    			add_location(main, file, 27, 0, 922);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, main, anchor);
-    			if (if_block0) if_block0.m(main, null);
-    			append_dev(main, t);
-    			if_block1.m(main, null);
+    			append_dev(main, nav);
+    			append_dev(nav, div2);
+    			append_dev(div2, div1);
+    			append_dev(div1, a0);
+    			append_dev(div1, t1);
+    			append_dev(div1, div0);
+    			append_dev(div0, ul);
+    			append_dev(ul, li0);
+    			append_dev(li0, a1);
+    			append_dev(ul, t3);
+    			append_dev(ul, li1);
+    			append_dev(li1, a2);
+    			append_dev(ul, t5);
+    			append_dev(ul, li2);
+    			append_dev(li2, a3);
+    			append_dev(ul, t7);
+    			append_dev(ul, li3);
+    			append_dev(li3, a4);
     		},
-    		p: function update(ctx, [dirty]) {
-    			if (current_block_type === (current_block_type = select_block_type(ctx)) && if_block0) {
-    				if_block0.p(ctx, dirty);
-    			} else {
-    				if (if_block0) if_block0.d(1);
-    				if_block0 = current_block_type && current_block_type(ctx);
-
-    				if (if_block0) {
-    					if_block0.c();
-    					if_block0.m(main, t);
-    				}
-    			}
-
-    			if (current_block_type_1 === (current_block_type_1 = select_block_type_1(ctx)) && if_block1) {
-    				if_block1.p(ctx, dirty);
-    			} else {
-    				if_block1.d(1);
-    				if_block1 = current_block_type_1(ctx);
-
-    				if (if_block1) {
-    					if_block1.c();
-    					if_block1.m(main, null);
-    				}
-    			}
-    		},
+    		p: noop,
     		i: noop,
     		o: noop,
     		d: function destroy(detaching) {
     			if (detaching) detach_dev(main);
-
-    			if (if_block0) {
-    				if_block0.d();
-    			}
-
-    			if_block1.d();
     		}
     	};
 
@@ -13319,70 +13135,40 @@ var app = (function () {
     function instance($$self, $$props, $$invalidate) {
     	let $tags;
     	let $allTags;
-    	let $tag;
+    	validate_store(allTags, "allTags");
+    	component_subscribe($$self, allTags, $$value => $$invalidate(2, $allTags = $$value));
     	let { $$slots: slots = {}, $$scope } = $$props;
     	validate_slots("App", slots, []);
-
-    	const wsLink = new WebSocketLink({
-    			uri: "wss://localhost:5001/graphql",
-    			options: { reconnect: true }
-    		});
-
-    	const httpLink = createHttpLink({ uri: "https://localhost:5001/graphql/" });
-
-    	const splitLink = split$1(
-    		({ query }) => {
-    			const definition = getMainDefinition(query);
-    			return definition.kind === "OperationDefinition" && definition.operation === "subscription";
-    		},
-    		wsLink,
-    		httpLink
-    	);
-
-    	const client = new ApolloClient({
-    			link: splitLink,
-    			cache: new InMemoryCache()
-    		});
-
-    	const READ_ALL_TAGS = gql$1`query{
-  tags{
-    tagName
-    value
-  }}`;
-
-    	const READ_TAG = gql$1`subscription{
-    onTagUpdated{
-    tagName
-    value
-  }
-}`;
-
     	setClient(client);
-    	let allTags = writable([]);
-    	validate_store(allTags, "allTags");
-    	component_subscribe($$self, allTags, value => $$invalidate(5, $allTags = value));
     	const tag = subscribe(READ_TAG, { fetchPolicy: "cache-and-network" });
-    	validate_store(tag, "tag");
-    	component_subscribe($$self, tag, value => $$invalidate(1, $tag = value));
     	const tags = query(READ_ALL_TAGS, { fetchPolicy: "cache-and-network" });
     	validate_store(tags, "tags");
-    	component_subscribe($$self, tags, value => $$invalidate(0, $tags = value));
+    	component_subscribe($$self, tags, value => $$invalidate(1, $tags = value));
 
     	tags.subscribe(event => {
-    		allTags.set(event.data);
+    		if (event.loading) {
+    			console.log("loading");
+    		} else if (event.data) {
+    			let localtags = event.data.tags;
+    			allTags.set(localtags);
+    		}
     	});
 
     	//tags.subscribe(event => console.log(JSON.stringify(event.data)));
     	tag.subscribe(event => {
     		if ($tags.loading) {
     			console.log("loading");
-    		} else if ($tags.data && $allTags.tags) {
-    			const objIndex = $allTags.tags.findIndex(obj => obj.tagName == event.data.onTagUpdated.tagName);
-
-    			//allTags.update(n => n.tags[objIndex].value = event.data.onTagUpdated.value);
-    			$allTags.update(n => n.tags[objIndex].value = 100);
-
-    			console.log($allTags.tags);
+    		} else if ($tags.data && $allTags) {
+    			set_store_value(
+    				allTags,
+    				$allTags = $allTags.map(p => p.tagName === event.data.onTagUpdated.tagName
+    				? {
+    						...p,
+    						value: event.data.onTagUpdated.value
+    					}
+    				: p),
+    				$allTags
+    			);
     		}
     	});
 
@@ -13393,40 +13179,20 @@ var app = (function () {
     	});
 
     	$$self.$capture_state = () => ({
-    		ApolloClient,
-    		InMemoryCache,
-    		split: split$1,
-    		getMainDefinition,
-    		WebSocketLink,
-    		gql: gql$1,
     		query,
     		subscribe,
     		setClient,
-    		createHttpLink,
-    		writable,
-    		wsLink,
-    		httpLink,
-    		splitLink,
+    		allTags,
     		client,
     		READ_ALL_TAGS,
     		READ_TAG,
-    		allTags,
     		tag,
     		tags,
     		$tags,
-    		$allTags,
-    		$tag
+    		$allTags
     	});
 
-    	$$self.$inject_state = $$props => {
-    		if ("allTags" in $$props) $$invalidate(2, allTags = $$props.allTags);
-    	};
-
-    	if ($$props && "$$inject" in $$props) {
-    		$$self.$inject_state($$props.$$inject);
-    	}
-
-    	return [$tags, $tag, allTags, tags, tag];
+    	return [tags];
     }
 
     class App extends SvelteComponentDev {

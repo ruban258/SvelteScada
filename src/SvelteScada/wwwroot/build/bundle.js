@@ -1,5 +1,5 @@
 
-(function(l, r) { if (l.getElementById('livereloadscript')) return; r = l.createElement('script'); r.async = 1; r.src = '//' + (window.location.host || 'localhost').split(':')[0] + ':35730/livereload.js?snipver=1'; r.id = 'livereloadscript'; l.getElementsByTagName('head')[0].appendChild(r) })(window.document);
+(function(l, r) { if (l.getElementById('livereloadscript')) return; r = l.createElement('script'); r.async = 1; r.src = '//' + (window.location.host || 'localhost').split(':')[0] + ':35729/livereload.js?snipver=1'; r.id = 'livereloadscript'; l.getElementsByTagName('head')[0].appendChild(r) })(window.document);
 var app = (function () {
     'use strict';
 
@@ -13056,38 +13056,38 @@ var app = (function () {
     			a4.textContent = "Contact";
     			attr_dev(a0, "href", "");
     			attr_dev(a0, "class", "text-white text-3xl font-bold p-3");
-    			add_location(a0, file, 31, 8, 1039);
+    			add_location(a0, file, 31, 8, 1070);
     			attr_dev(a1, "href", "");
     			attr_dev(a1, "class", "p-3 hover:text-red-900");
-    			add_location(a1, file, 36, 14, 1277);
+    			add_location(a1, file, 36, 14, 1313);
     			attr_dev(li0, "class", "sm:inline-block");
-    			add_location(li0, file, 35, 12, 1234);
+    			add_location(li0, file, 35, 12, 1269);
     			attr_dev(a2, "href", "");
     			attr_dev(a2, "class", "p-3 hover:text-red-900");
-    			add_location(a2, file, 39, 14, 1399);
+    			add_location(a2, file, 39, 14, 1438);
     			attr_dev(li1, "class", "sm:inline-block");
-    			add_location(li1, file, 38, 12, 1356);
+    			add_location(li1, file, 38, 12, 1394);
     			attr_dev(a3, "href", "");
     			attr_dev(a3, "class", "p-3 hover:text-red-900");
-    			add_location(a3, file, 42, 14, 1524);
+    			add_location(a3, file, 42, 14, 1566);
     			attr_dev(li2, "class", "sm:inline-block");
-    			add_location(li2, file, 41, 12, 1481);
+    			add_location(li2, file, 41, 12, 1522);
     			attr_dev(a4, "href", "");
     			attr_dev(a4, "class", "p-3 hover:text-red-900");
-    			add_location(a4, file, 45, 14, 1645);
+    			add_location(a4, file, 45, 14, 1690);
     			attr_dev(li3, "class", "sm:inline-block");
-    			add_location(li3, file, 44, 12, 1602);
+    			add_location(li3, file, 44, 12, 1646);
     			attr_dev(ul, "class", "text-white sm:self-center text-xl");
-    			add_location(ul, file, 34, 10, 1175);
+    			add_location(ul, file, 34, 10, 1209);
     			attr_dev(div0, "class", "ml-55 mt-4");
-    			add_location(div0, file, 33, 8, 1140);
+    			add_location(div0, file, 33, 8, 1173);
     			attr_dev(div1, "class", "sm:flex");
-    			add_location(div1, file, 30, 6, 1009);
+    			add_location(div1, file, 30, 6, 1039);
     			attr_dev(div2, "class", "container mx-auto");
-    			add_location(div2, file, 29, 4, 971);
+    			add_location(div2, file, 29, 4, 1000);
     			attr_dev(nav, "class", "bg-blue-900 shadow-lg");
-    			add_location(nav, file, 28, 2, 931);
-    			add_location(main, file, 27, 0, 922);
+    			add_location(nav, file, 28, 2, 959);
+    			add_location(main, file, 27, 0, 949);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");

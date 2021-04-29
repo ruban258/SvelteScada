@@ -1,3 +1,3 @@
 import { writable } from 'svelte/store';
 
-export var allTags = writable([]);
+export var allTags = writable({});

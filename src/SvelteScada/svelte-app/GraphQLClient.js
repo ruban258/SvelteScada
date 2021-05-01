@@ -2,7 +2,8 @@ import { ApolloClient,from,InMemoryCache,split,} from "@apollo/client";
 import { getMainDefinition } from "@apollo/client/utilities";
 import { WebSocketLink } from "@apollo/link-ws";
 import { gql } from "@apollo/client";
-import { createHttpLink } from 'apollo-link-http'; 
+import { createHttpLink } from 'apollo-link-http';
+
 
 
 const wsLink = new WebSocketLink({
@@ -41,5 +42,6 @@ const READ_TAG = gql`subscription{
     value
   }
 }`;
+
 
 export {client, READ_ALL_TAGS, READ_TAG};

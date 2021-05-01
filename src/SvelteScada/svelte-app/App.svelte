@@ -4,6 +4,7 @@
   import {allTags} from './Stores.js';
   import {client, READ_ALL_TAGS, READ_TAG} from './GraphQLClient';
   import Navbar from './Navbar.svelte';
+  import Gauge from './Gauge.svelte';
   
   setClient(client);
 
@@ -29,8 +30,13 @@
       $allTags[event.data.onTagUpdated.tagName].value = event.data.onTagUpdated.value;      
     }});  
 </script>
-<main>
+<main class="bg-gray-100">
   <Navbar></Navbar>
+  <div class="mt-7 text-5xl flex-col content-center">
+    <Gauge value ={10}/>
+    <h1>Temperature</h1>
+  </div>
+  
 </main>
 
 

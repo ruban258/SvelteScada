@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
+using  Opc.Ua.Security.Certificates;
 using System.Text;
 using System.Threading.Tasks;
 using GQLServer.GQL;
@@ -297,7 +298,7 @@ namespace GQLServer.infra
             ApplicationConfiguration configuration = new ApplicationConfiguration();
 
             // Step 1 - Specify the client identity.
-            configuration.ApplicationName = "UA Client 1500";
+            configuration.ApplicationName = "UA Client";
             configuration.ApplicationType = ApplicationType.Client;
             configuration.ApplicationUri = "urn:MyClient"; //Kepp this syntax
             configuration.ProductUri = "SiemensAG.IndustryOnlineSupport";
@@ -328,28 +329,7 @@ namespace GQLServer.infra
             // create a new self signed certificate if not found.
             if (clientCertificate.Result == null)
             {
-                // Get local interface ip addresses and DNS name
-                List<string> localIps = GetLocalIpAddressAndDns();
-
-                UInt16 keySize = 2048; //must be multiples of 1024
-                UInt16 lifeTime = 24; //in month
-                UInt16 algorithm = 256; //0 = SHA1; 1 = SHA256
-
-                // this code would normally be called as part of the installer - called here to illustrate.
-                // create a new certificate and place it in the current user certificate store.
-                X509Certificate2 clientCertificate2 = CertificateFactory.CreateCertificate(
-                    configuration.SecurityConfiguration.ApplicationCertificate.StoreType,
-                    configuration.SecurityConfiguration.ApplicationCertificate.StorePath,
-                    null,
-                    configuration.ApplicationUri,
-                    configuration.ApplicationName,
-                    null,
-                    localIps,
-                    keySize,
-                    System.DateTime.Now,
-                    lifeTime,
-                    algorithm);
-                
+                X509Certificate2 cert = CertificateBuilder.Create("UA Client").CreateForRSA();
             }
 
             // Step 3 - Specify the supported transport quotas.

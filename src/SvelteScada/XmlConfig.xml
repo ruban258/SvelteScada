@@ -6,9 +6,9 @@
 		<Subscriptions>
 			<Subscription PublishingInterval="1000">
 				<OPCVariables>
-					<OPCVariable Name="Scalar_Static_Float" NodeID="" DBName="DataBlock" VariableName="Scalar_Static_Float" SamplingInterval="1000" />
-					<OPCVariable Name="Scalar_Static_Int32" NodeID="" DBName="DataBlock" VariableName="Scalar_Static_Int32" SamplingInterval="1000" />
-					<OPCVariable Name="Scalar_Static_String" NodeID="" DBName="DataBlock" VariableName="Scalar_Static_String" SamplingInterval="1000" />
+					<OPCVariable Name="pv_t_pos_fs" NodeID="" DBName="HMI_ProsessValues" VariableName="pv_t_pos_fs" SamplingInterval="1000" />
+					<OPCVariable Name="pv_t_pos_rs" NodeID="" DBName="HMI_ProsessValues" VariableName="pv_t_pos_rs" SamplingInterval="1000" />
+					<OPCVariable Name="pv_stretcher_pos_fs" NodeID="" DBName="HMI_ProsessValues" VariableName="pv_stretcher_pos_fs" SamplingInterval="1000" />
 				</OPCVariables>
 			</Subscription>
 		</Subscriptions>

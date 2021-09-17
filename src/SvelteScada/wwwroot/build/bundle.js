@@ -170,6 +170,19 @@ var app = (function () {
     }
     const outroing = new Set();
     let outros;
+    function group_outros() {
+        outros = {
+            r: 0,
+            c: [],
+            p: outros // parent group
+        };
+    }
+    function check_outros() {
+        if (!outros.r) {
+            run_all(outros.c);
+        }
+        outros = outros.p;
+    }
     function transition_in(block, local) {
         if (block && block.i) {
             outroing.delete(block);
@@ -13011,12 +13024,12 @@ var app = (function () {
     })(ApolloLink));
 
     const wsLink = new WebSocketLink({
-    uri: "wss://localhost:5001/graphql",
+    uri: "ws://localhost:5000/graphql",
     options: {
         reconnect: true
     }
     });
-    const httpLink = createHttpLink({uri: 'https://localhost:5001/graphql/'});
+    const httpLink = createHttpLink({uri: 'http://localhost:5000/graphql/'});
 
     const splitLink = split$1(
     ({ query }) => {
@@ -13511,17 +13524,105 @@ var app = (function () {
     const { console: console_1 } = globals;
     const file = "svelte-app\\App.svelte";
 
+    // (39:4) {:else}
+    function create_else_block(ctx) {
+    	let gauge;
+    	let current;
+    	gauge = new Gauge({ props: { value: 50 }, $$inline: true });
+
+    	const block = {
+    		c: function create() {
+    			create_component(gauge.$$.fragment);
+    		},
+    		m: function mount(target, anchor) {
+    			mount_component(gauge, target, anchor);
+    			current = true;
+    		},
+    		i: function intro(local) {
+    			if (current) return;
+    			transition_in(gauge.$$.fragment, local);
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			transition_out(gauge.$$.fragment, local);
+    			current = false;
+    		},
+    		d: function destroy(detaching) {
+    			destroy_component(gauge, detaching);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_else_block.name,
+    		type: "else",
+    		source: "(39:4) {:else}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (37:4) {#if $allTags.length == 0}
+    function create_if_block(ctx) {
+    	let gauge;
+    	let current;
+    	gauge = new Gauge({ props: { value: 100 }, $$inline: true });
+
+    	const block = {
+    		c: function create() {
+    			create_component(gauge.$$.fragment);
+    		},
+    		m: function mount(target, anchor) {
+    			mount_component(gauge, target, anchor);
+    			current = true;
+    		},
+    		i: function intro(local) {
+    			if (current) return;
+    			transition_in(gauge.$$.fragment, local);
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			transition_out(gauge.$$.fragment, local);
+    			current = false;
+    		},
+    		d: function destroy(detaching) {
+    			destroy_component(gauge, detaching);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_if_block.name,
+    		type: "if",
+    		source: "(37:4) {#if $allTags.length == 0}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
     function create_fragment(ctx) {
     	let main;
     	let navbar;
     	let t0;
     	let div;
-    	let gauge;
+    	let current_block_type_index;
+    	let if_block;
     	let t1;
     	let h1;
     	let current;
     	navbar = new Navbar({ $$inline: true });
-    	gauge = new Gauge({ props: { value: 10 }, $$inline: true });
+    	const if_block_creators = [create_if_block, create_else_block];
+    	const if_blocks = [];
+
+    	function select_block_type(ctx, dirty) {
+    		if (/*$allTags*/ ctx[0].length == 0) return 0;
+    		return 1;
+    	}
+
+    	current_block_type_index = select_block_type(ctx);
+    	if_block = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
 
     	const block = {
     		c: function create() {
@@ -13529,15 +13630,15 @@ var app = (function () {
     			create_component(navbar.$$.fragment);
     			t0 = space();
     			div = element("div");
-    			create_component(gauge.$$.fragment);
+    			if_block.c();
     			t1 = space();
     			h1 = element("h1");
     			h1.textContent = "Temperature";
-    			add_location(h1, file, 36, 4, 1179);
+    			add_location(h1, file, 41, 4, 1287);
     			attr_dev(div, "class", "mt-7 text-5xl flex-col content-center");
-    			add_location(div, file, 34, 2, 1096);
+    			add_location(div, file, 35, 2, 1116);
     			attr_dev(main, "class", "bg-gray-100");
-    			add_location(main, file, 32, 0, 1045);
+    			add_location(main, file, 33, 0, 1065);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -13547,27 +13648,49 @@ var app = (function () {
     			mount_component(navbar, main, null);
     			append_dev(main, t0);
     			append_dev(main, div);
-    			mount_component(gauge, div, null);
+    			if_blocks[current_block_type_index].m(div, null);
     			append_dev(div, t1);
     			append_dev(div, h1);
     			current = true;
     		},
-    		p: noop,
+    		p: function update(ctx, [dirty]) {
+    			let previous_block_index = current_block_type_index;
+    			current_block_type_index = select_block_type(ctx);
+
+    			if (current_block_type_index !== previous_block_index) {
+    				group_outros();
+
+    				transition_out(if_blocks[previous_block_index], 1, 1, () => {
+    					if_blocks[previous_block_index] = null;
+    				});
+
+    				check_outros();
+    				if_block = if_blocks[current_block_type_index];
+
+    				if (!if_block) {
+    					if_block = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
+    					if_block.c();
+    				}
+
+    				transition_in(if_block, 1);
+    				if_block.m(div, t1);
+    			}
+    		},
     		i: function intro(local) {
     			if (current) return;
     			transition_in(navbar.$$.fragment, local);
-    			transition_in(gauge.$$.fragment, local);
+    			transition_in(if_block);
     			current = true;
     		},
     		o: function outro(local) {
     			transition_out(navbar.$$.fragment, local);
-    			transition_out(gauge.$$.fragment, local);
+    			transition_out(if_block);
     			current = false;
     		},
     		d: function destroy(detaching) {
     			if (detaching) detach_dev(main);
     			destroy_component(navbar);
-    			destroy_component(gauge);
+    			if_blocks[current_block_type_index].d();
     		}
     	};
 
@@ -13586,7 +13709,7 @@ var app = (function () {
     	let $allTags;
     	let $tags;
     	validate_store(allTags, "allTags");
-    	component_subscribe($$self, allTags, $$value => $$invalidate(1, $allTags = $$value));
+    	component_subscribe($$self, allTags, $$value => $$invalidate(0, $allTags = $$value));
     	let { $$slots: slots = {}, $$scope } = $$props;
     	validate_slots("App", slots, []);
     	setClient(client);
@@ -13639,7 +13762,7 @@ var app = (function () {
     		$tags
     	});
 
-    	return [tags];
+    	return [$allTags, tags];
     }
 
     class App extends SvelteComponentDev {

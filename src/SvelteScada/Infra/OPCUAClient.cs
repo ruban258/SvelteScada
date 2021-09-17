@@ -329,7 +329,7 @@ namespace GQLServer.infra
             // create a new self signed certificate if not found.
             if (clientCertificate.Result == null)
             {
-                X509Certificate2 cert = CertificateBuilder.Create("UA Client").CreateForRSA();
+                X509Certificate2 cert = CertificateBuilder.Create("CN=UAclient").CreateForRSA();
             }
 
             // Step 3 - Specify the supported transport quotas.

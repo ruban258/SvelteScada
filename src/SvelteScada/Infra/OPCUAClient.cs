@@ -287,6 +287,7 @@ namespace GQLServer.infra
             var tag = _tags.Where(t => monitoredItem.DisplayName == t.TagName).FirstOrDefault();
             var value = (MonitoredItemNotification)monitoredItem.LastValue;            
             tag.Value = value.Value.WrappedValue.Value.ToString();
+            BuiltInType type = value.Value.WrappedValue.TypeInfo.BuiltInType;
             await _eventSender.SendAsync(nameof(GQLSubscription.OnTagUpdated), tag);
         }
         private static ApplicationConfiguration CreateClientConfiguration()

@@ -21,6 +21,16 @@ namespace GQLServer
             services.AddSingleton<IOutput, ConsoleOutput>();
             services.AddSingleton<XMLParser>();
             services.AddSingleton<UAClient>();
+
+            services.AddCors(options => 
+            {
+                options.AddDefaultPolicy(builder =>
+                {
+                    builder
+                        .WithOrigins("http://localhost:3000")
+                        .WithHeaders("content-type");
+                });
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -33,6 +43,7 @@ namespace GQLServer
             app.UseDefaultFiles();
             app.UseStaticFiles();
             app.UseRouting();
+            app.UseCors();
             app.UseWebSockets();
 
             app.UseEndpoints(endpoints =>

@@ -1,8 +1,13 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading.Tasks;
+using GQLServer.Data;
 using GQLServer.infra;
 using GQLServer.Models;
+using HotChocolate;
+using Microsoft.EntityFrameworkCore;
+
 namespace GQLServer.GQL
 {
     public class Query
@@ -29,6 +34,10 @@ namespace GQLServer.GQL
                return _uaClient.Tags;
             }
             return new ObservableCollection<Tag>();
+        }
+        public IQueryable<Recepie> GetRecepies([Service] AppDbContext context)
+        {
+            return context.Recepies.Include(recepie => recepie.Steps);       
         }
     }
 }

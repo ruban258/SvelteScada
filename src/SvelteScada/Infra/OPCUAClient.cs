@@ -285,9 +285,9 @@ namespace GQLServer.infra
         private async void WriteDataOnNotificationAsync(MonitoredItem monitoredItem, MonitoredItemNotificationEventArgs e)
         {
             var tag = _tags.Where(t => monitoredItem.DisplayName == t.TagName).FirstOrDefault();
-            var value = (MonitoredItemNotification)monitoredItem.LastValue;            
-            tag.Value = value.Value.WrappedValue.Value.ToString();
-            BuiltInType type = value.Value.WrappedValue.TypeInfo.BuiltInType;
+            var value = (MonitoredItemNotification)monitoredItem.LastValue;
+            tag.Value = Convert.ToString(value.Value.WrappedValue.Value);
+            tag.TagType = value.Value.WrappedValue.TypeInfo.BuiltInType;
             await _eventSender.SendAsync(nameof(GQLSubscription.OnTagUpdated), tag);
         }
         private static ApplicationConfiguration CreateClientConfiguration()
